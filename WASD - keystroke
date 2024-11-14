@@ -1,0 +1,54 @@
+# Example code for WASD touch-sensor controller. You will need to include the usb_hid library from the circuitpython library bundle. 
+
+import time
+import board
+import touchio
+import digitalio
+import usb_hid
+from adafruit_hid.keyboard import Keyboard
+from adafruit_hid.keycode import Keycode
+
+# Define the touch pins
+touch_pins = [board.GP2, board.GP3, board.GP4, board.GP5]
+
+touch_sensors = []
+for pin in touch_pins:
+    try:
+        touch_sensors.append(touchio.TouchIn(pin))
+    except ValueError:
+        print(f"No pulldown resistor found on pin {pin}, skipping...")
+
+# HID keyboard setup
+keyboard = Keyboard(usb_hid.devices)
+
+# Key mappings for each touch pin (W, A, S, D) - change these in the line beneath if you want to change what keystroke gets pressed.
+key_mappings = [Keycode.W, Keycode.A, Keycode.S, Keycode.D]
+
+# State variables to track if a key has been pressed for each touch pin
+key_pressed = [False] * len(touch_pins)
+
+# Setup LED toggling
+led = digitalio.DigitalInOut(board.LED)
+led.direction = digitalio.Direction.OUTPUT
+
+# Main loop
+while True:
+    for i, touch_sensor in enumerate(touch_sensors):
+        # Capacitive touch sensing
+        if touch_sensor.value:
+            # Check if the key has already been pressed
+            if not key_pressed[i]:
+                # Press the key when touch is detected
+                keyboard.press(key_mappings[i])
+                led.value = True
+                key_pressed[i] = True  # Update state variable
+        else:
+            # Check if the key has been pressed and release it
+            if key_pressed[i]:
+                # Release the key when touch is released
+                keyboard.release(key_mappings[i])
+                led.value = False
+                key_pressed[i] = False  # Update state variable
+
+    # Add a small delay to avoid too much polling
+    time.sleep(0.01)
