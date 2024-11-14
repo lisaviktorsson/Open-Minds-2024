@@ -1,0 +1,74 @@
+# Code for USB-MIDI touch inputs + Neopixel control. You will need to include usb_midi + neopixel libraries. 
+
+import time
+import board
+import touchio
+import neopixel
+import usb_midi
+import adafruit_midi
+from adafruit_midi.note_on import NoteOn
+from adafruit_midi.note_off import NoteOff
+import random
+
+# Define the touch pins and NeoPixel colors for each pin
+touch_pins = [board.GP2, board.GP3, board.GP4, board.GP5, board.GP18, board.GP20, board.GP21]
+num_pixels = 12  # Number of NeoPixels
+
+# NeoPixel setup
+pixels = neopixel.NeoPixel(board.GP0, num_pixels)
+pixels.brightness = 0.1
+
+# Initialize touch sensors
+touch_sensors = []
+for pin in touch_pins:
+    try:
+        touch_sensors.append(touchio.TouchIn(pin))
+    except ValueError:
+        print(f"No pulldown resistor found on pin {pin}, skipping...")
+
+# MIDI setup
+midi = adafruit_midi.MIDI(midi_out=usb_midi.ports[1], out_channel=0)
+
+# MIDI note numbers corresponding to each touch pin
+midi_notes = [36, 38, 40, 43, 45, 48, 50]
+
+# State variables to track if a note has been played for each touch pin
+note_played = [False] * len(touch_pins)
+
+# Define colors for each touch pin (modify colors as desired)
+colors = [
+    (0, 0, 255),    # Blue
+    (255, 0, 0),    # Red
+    (0, 255, 0),    # Green
+    (255, 255, 0),  # Yellow
+    (0, 255, 255),  # Cyan
+    (255, 0, 255),  # Magenta
+    (255, 127, 0)   # Orange
+]
+
+# Function to set all NeoPixels to a specific color
+def set_color(color):
+    for i in range(num_pixels):
+        pixels[i] = color
+    pixels.show()
+
+# Main loop
+while True:
+    for i, touch_sensor in enumerate(touch_sensors):
+        # Capacitive touch sensing
+        if touch_sensor.value:
+            # Check if the note has already been played
+            if not note_played[i]:
+                # Send MIDI note on message when touch is detected
+                midi.send(NoteOn(midi_notes[i], 120))  # Velocity set to 120
+                set_color(colors[i])  # Set NeoPixel color
+                note_played[i] = True  # Update state variable
+        else:
+            # Check if the note has been played and turn it off
+            if note_played[i]:
+                # Send MIDI note off message when touch is released
+                midi.send(NoteOff(midi_notes[i], 120))
+                set_color((0, 0, 0))  # Turn off NeoPixels
+                note_played[i] = False  # Update state variable
+
+    time.sleep(0.01)  # Small delay to avoid flooding with events
