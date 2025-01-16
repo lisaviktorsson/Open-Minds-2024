@@ -1,4 +1,9 @@
-The pico is using Circuitpython, head here to download the latest version: https://circuitpython.org/board/raspberry_pi_pico_w/
+The pico is using Circuitpython, head here to download the latest version:
+For Pico use:
+ https://circuitpython.org/board/raspberry_pi_pico/
+For Pico W use:
+ https://circuitpython.org/board/raspberry_pi_pico/
+
 
 You will also need to copy and paste some libraries to the device if they're not already there. The libaries can be downloaded here: https://circuitpython.org/libraries
 
